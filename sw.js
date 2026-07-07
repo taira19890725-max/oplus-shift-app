@@ -1,4 +1,4 @@
-var CACHE = 'oplus-shell-v1';
+var CACHE = 'oplus-shell-v2';
 var ASSETS = [
   './',
   './index.html',
@@ -30,14 +30,12 @@ self.addEventListener('fetch', function(e){
   if (e.request.method !== 'GET') return;
   if (e.request.url.indexOf(self.location.origin) !== 0) return; // let Firebase/cross-origin calls pass through untouched
 
+  // network-first: always prefer the latest file when online, fall back to cache when offline
   e.respondWith(
-    caches.match(e.request).then(function(cached){
-      var fetchPromise = fetch(e.request).then(function(res){
-        var resClone = res.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, resClone); });
-        return res;
-      }).catch(function(){ return cached; });
-      return cached || fetchPromise;
-    })
+    fetch(e.request).then(function(res){
+      var resClone = res.clone();
+      caches.open(CACHE).then(function(c){ c.put(e.request, resClone); });
+      return res;
+    }).catch(function(){ return caches.match(e.request); })
   );
 });
